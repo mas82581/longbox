@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#1B2420">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Tableside</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap');
+:root{
+  --ink:#1B2420; --ink-2:#232E29; --ink-3:#2C3A33;
+  --parchment:#F1EAD6; --parchment-dim:#E7DCBE; --line:#D3C39C;
+  --brass:#B08D57; --brass-dim:#8C6F44; --burgundy:#7A2E2E;
+  --text-light:#EDE6D2; --text-dark:#242019; --muted:#8A9A90;
+  --fd:'Fraunces',serif; --fb:'IBM Plex Sans',sans-serif; --fm:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;background:var(--ink);color:var(--text-light);font-family:var(--fb);overscroll-behavior:none;}
+body{padding:10px 10px 28px;max-width:760px;margin:0 auto;}
+h1{font-family:var(--fd);font-size:26px;font-weight:600;margin:4px 0 2px;color:var(--parchment);}
+h1 small{display:block;font-family:var(--fb);font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--brass);margin-top:2px;}
+.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:10px;}
+.tools{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+button{font-family:var(--fb);font-size:14px;font-weight:500;border-radius:4px;border:1px solid var(--brass-dim);
+  background:var(--ink-2);color:var(--text-light);padding:9px 12px;cursor:pointer;min-height:42px;}
+button:active{transform:scale(0.97);}
+button.on{background:var(--brass-dim);color:var(--ink);font-weight:600;}
+button.primary{background:var(--brass-dim);border-color:var(--brass);color:var(--ink);font-weight:600;}
+button.tiny{min-height:34px;padding:5px 9px;font-size:12px;}
+button.danger{border-color:var(--burgundy);color:#e8bfbf;}
+select{font-family:var(--fb);font-size:14px;background:var(--ink-2);color:var(--text-light);
+  border:1px solid var(--brass-dim);border-radius:4px;padding:9px;width:100%;min-height:42px;}
+.panel{background:var(--ink-2);border:1px solid var(--brass-dim);border-radius:6px;padding:12px;margin-bottom:10px;}
+.label{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--brass);margin-bottom:6px;}
+
+/* players */
+.players{display:grid;gap:8px;}
+.players.n2{grid-template-columns:1fr 1fr;}
+.players.n3,.players.n4{grid-template-columns:1fr 1fr;}
+.players.n5{grid-template-columns:1fr 1fr;}
+@media(max-width:420px){ .players.n3,.players.n4,.players.n5{grid-template-columns:1fr 1fr;} }
+.pcard{border-radius:8px;padding:10px 8px;border:2px solid var(--brass-dim);background:var(--ink-2);
+  display:flex;flex-direction:column;align-items:center;gap:4px;position:relative;overflow:hidden;}
+.pcard.dead{opacity:0.42;}
+.pcard.low{border-color:var(--burgundy);}
+.pname{font-family:var(--fd);font-size:14px;font-weight:600;text-align:center;line-height:1.15;min-height:32px;
+  display:flex;align-items:center;justify-content:center;}
+.pcolors{font-family:var(--fm);font-size:10px;color:var(--muted);letter-spacing:1px;margin-top:-2px;}
+.life{font-family:var(--fm);font-size:42px;font-weight:600;line-height:1;margin:2px 0;}
+.life.crit{color:#E08A8A;}
+.lifebtns{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;width:100%;}
+.lifebtns button{padding:8px 0;font-size:14px;font-family:var(--fm);min-height:40px;}
+.extra{display:flex;gap:6px;align-items:center;justify-content:center;width:100%;margin-top:2px;}
+.pchip{font-size:11px;font-family:var(--fm);background:var(--ink-3);border:1px solid var(--brass-dim);
+  border-radius:3px;padding:3px 6px;color:var(--text-light);cursor:pointer;}
+.pchip.hot{background:#3B5140;border-color:#6E8F72;}
+.deadtag{position:absolute;top:6px;right:6px;font-size:9px;letter-spacing:1px;text-transform:uppercase;
+  background:var(--burgundy);color:#fff;padding:2px 5px;border-radius:3px;}
+
+/* log */
+.log{font-size:13px;line-height:1.55;max-height:150px;overflow:auto;}
+.log div{padding:3px 0;border-bottom:1px solid var(--ink-3);}
+.log .say{color:var(--brass);}
+
+/* standings */
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--brass);
+  padding:5px 4px;border-bottom:1px solid var(--brass-dim);}
+td{padding:6px 4px;border-bottom:1px solid var(--ink-3);}
+td.num{font-family:var(--fm);text-align:right;}
+.bar{height:5px;background:var(--ink-3);border-radius:3px;overflow:hidden;margin-top:3px;}
+.bar i{display:block;height:100%;background:var(--brass);}
+.setup-row{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center;margin-bottom:8px;}
+.setup-row span{font-size:12px;color:var(--muted);font-family:var(--fm);}
+.hidden{display:none;}
+.foot{font-size:11px;color:var(--muted);line-height:1.5;margin-top:12px;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const DECKS = [
+ {n:"Congregation",  c:"W/B", d:"lifegain drain"},
+ {n:"Spellstorm",    c:"U/R", d:"spells matter"},
+ {n:"Undergrowth",   c:"B/G", d:"graveyard grind"},
+ {n:"Full Throttle", c:"R/W", d:"vehicles"},
+ {n:"Apotheosis",    c:"G/U", d:"heroic auras"},
+ {n:"Avacyn's Vigil",c:"G/W", d:"humans & angels"},
+ {n:"Night Court",   c:"B/R", d:"vampires"},
+ {n:"The Last Stand",c:"G/W", d:"Melira combo"},
+ {n:"Tidebinders",   c:"U",   d:"merfolk"},
+ {n:"The Hive",      c:"WRG", d:"slivers"},
+ {n:"Other deck",    c:"—",   d:""}
+];
+
+let S = {
+  screen:"setup", count:4, start:20, voice:true,
+  players:[], log:[], records:{}, matches:0
+};
+
+/* ---------- storage ---------- */
+function save(){
+  try{
+    localStorage.setItem("tableside:records", JSON.stringify(S.records));
+    localStorage.setItem("tableside:matches", String(S.matches));
+    localStorage.setItem("tableside:prefs", JSON.stringify({voice:S.voice,start:S.start,count:S.count}));
+  }catch(e){}
+}
+function load(){
+  try{
+    const r=localStorage.getItem("tableside:records"); if(r) S.records=JSON.parse(r);
+    const m=localStorage.getItem("tableside:matches"); if(m) S.matches=parseInt(m,10)||0;
+    const p=localStorage.getItem("tableside:prefs");
+    if(p){ const o=JSON.parse(p); if(typeof o.voice==="boolean") S.voice=o.voice;
+           if(o.start) S.start=o.start; if(o.count) S.count=o.count; }
+  }catch(e){}
+}
+function rec(name){
+  if(!S.records[name]) S.records[name]={w:0,l:0};
+  return S.records[name];
+}
+
+/* ---------- voice ---------- */
+let voiceReady=false;
+function speak(text){
+  if(!S.voice) return;
+  try{
+    if(!("speechSynthesis" in window)) return;
+    const u=new SpeechSynthesisUtterance(text);
+    u.rate=1.02; u.pitch=0.95; u.volume=1;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+    voiceReady=true;
+  }catch(e){}
+}
+function note(text,spoken){
+  S.log.unshift({t:text,s:!!spoken});
+  if(S.log.length>60) S.log.pop();
+  if(spoken) speak(spoken);
+}
+
+/* ---------- narration lines ---------- */
+function lifeComment(p,delta){
+  const n=p.name;
+  if(p.life<=0) return `${n} is out.`;
+  if(p.life<=3) return `${n} at ${p.life}. One good swing ends it.`;
+  if(p.life<=5) return `${n} down to ${p.life}.`;
+  if(delta<=-7) return `${n} takes ${Math.abs(delta)}. Down to ${p.life}.`;
+  if(delta>=7) return `${n} climbs to ${p.life}.`;
+  return null;
+}
+function poisonComment(p){
+  if(p.poison>=10) return `${p.name} is poisoned out.`;
+  if(p.poison>=7) return `${p.name} at ${p.poison} poison. Getting dangerous.`;
+  if(p.poison>=4) return `${p.name} at ${p.poison} poison.`;
+  return null;
+}
+function openingLine(){
+  const names=S.players.map(p=>p.name);
+  const last=names.pop();
+  return `${names.join(", ")} versus ${last}. ${S.start} life. Good luck.`;
+}
+
+/* ---------- match flow ---------- */
+function startMatch(){
+  S.players = S.players.slice(0,S.count).map(p=>({...p, life:S.start, poison:0, dead:false}));
+  S.log=[];
+  S.screen="game";
+  note("Match started — "+S.players.map(p=>p.name).join(" vs "), openingLine());
+  keepAwake();
+  save(); render();
+}
+function adjust(i,delta){
+  const p=S.players[i];
+  if(p.dead) return;
+  p.life+=delta;
+  const c=lifeComment(p,delta);
+  note(`${p.name} ${delta>0?"+":""}${delta} → ${p.life}`, c);
+  if(p.life<=0 && !p.dead) eliminate(i,"life");
+  render();
+}
+function poison(i,delta){
+  const p=S.players[i];
+  if(p.dead) return;
+  p.poison=Math.max(0,p.poison+delta);
+  const c=poisonComment(p);
+  note(`${p.name} poison ${p.poison}`, c);
+  if(p.poison>=10 && !p.dead) eliminate(i,"poison");
+  render();
+}
+function eliminate(i,how){
+  const p=S.players[i];
+  p.dead=true;
+  note(`${p.name} eliminated (${how})`, `${p.name} is eliminated.`);
+  const alive=S.players.filter(x=>!x.dead);
+  if(alive.length===1) declareWinner(S.players.indexOf(alive[0]),true);
+}
+function declareWinner(i,auto){
+  const w=S.players[i];
+  S.players.forEach((p,idx)=>{
+    if(idx===i) rec(p.name).w++;
+    else rec(p.name).l++;
+  });
+  S.matches++;
+  note(`${w.name} wins`, auto ? `${w.name} takes it. Last one standing.` : `${w.name} wins the match.`);
+  S.screen="result"; S.winner=i;
+  save(); render();
+}
+
+let wakeLock=null;
+async function keepAwake(){
+  try{ if("wakeLock" in navigator) wakeLock=await navigator.wakeLock.request("screen"); }catch(e){}
+}
+
+/* ---------- render ---------- */
+function el(h){const d=document.createElement("div");d.innerHTML=h.trim();return d.firstElementChild;}
+function app(){return document.getElementById("app");}
+
+function render(){
+  const a=app(); a.innerHTML="";
+  a.appendChild(topbar());
+  if(S.screen==="setup") a.appendChild(setupView());
+  else if(S.screen==="game") a.appendChild(gameView());
+  else if(S.screen==="result") a.appendChild(resultView());
+  else a.appendChild(standingsView());
+  a.appendChild(el(`<div class="foot">Tableside — life, poison and match records for the battle set. Records save on this device. Narration uses your phone's built-in voice; no network needed.</div>`));
+}
+
+function topbar(){
+  const t=el(`<div class="topbar">
+    <h1>Tableside<small>Battle set companion</small></h1>
+    <div class="tools">
+      <button class="tiny ${S.voice?'on':''}" id="v">${S.voice?'Voice on':'Voice off'}</button>
+      <button class="tiny" id="st">Standings</button>
+      ${S.screen!=="setup"?'<button class="tiny danger" id="nm">New match</button>':''}
+    </div></div>`);
+  t.querySelector("#v").onclick=()=>{
+    S.voice=!S.voice; save();
+    if(S.voice) speak("Voice on.");
+    else if(window.speechSynthesis) window.speechSynthesis.cancel();
+    render();
+  };
+  t.querySelector("#st").onclick=()=>{S.screen=S.screen==="standings"?"setup":"standings";render();};
+  const nm=t.querySelector("#nm"); if(nm) nm.onclick=()=>{S.screen="setup";render();};
+  return t;
+}
+
+function setupView(){
+  if(S.players.length<5){
+    for(let i=S.players.length;i<5;i++) S.players.push({name:DECKS[i%DECKS.length].n, colors:DECKS[i%DECKS.length].c});
+  }
+  const w=el(`<div></div>`);
+  const cfg=el(`<div class="panel">
+    <div class="label">Match setup</div>
+    <div class="setup-row"><span>PLAYERS</span><div id="cnt" style="display:flex;gap:6px;">
+      ${[2,3,4,5].map(n=>`<button class="tiny ${S.count===n?'on':''}" data-n="${n}" style="flex:1">${n}</button>`).join("")}
+    </div></div>
+    <div class="setup-row"><span>LIFE</span><div id="lf" style="display:flex;gap:6px;">
+      ${[20,25,30,40].map(n=>`<button class="tiny ${S.start===n?'on':''}" data-l="${n}" style="flex:1">${n}</button>`).join("")}
+    </div></div>
+  </div>`);
+  cfg.querySelectorAll("#cnt button").forEach(b=>b.onclick=()=>{S.count=+b.dataset.n;save();render();});
+  cfg.querySelectorAll("#lf button").forEach(b=>b.onclick=()=>{S.start=+b.dataset.l;save();render();});
+  w.appendChild(cfg);
+
+  const picks=el(`<div class="panel"><div class="label">Decks in play</div><div id="picks"></div></div>`);
+  const holder=picks.querySelector("#picks");
+  for(let i=0;i<S.count;i++){
+    const row=el(`<div style="margin-bottom:8px;">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:3px;font-family:var(--fm);">SEAT ${i+1}</div>
+      <select data-i="${i}">${DECKS.map(d=>`<option ${S.players[i].name===d.n?"selected":""} value="${d.n}">${d.n}${d.d?" — "+d.d:""}</option>`).join("")}</select>
+    </div>`);
+    row.querySelector("select").onchange=e=>{
+      const d=DECKS.find(x=>x.n===e.target.value);
+      S.players[+e.target.dataset.i]={name:d.n,colors:d.c};
+      render();
+    };
+    holder.appendChild(row);
+  }
+  w.appendChild(picks);
+  const go=el(`<button class="primary" style="width:100%;font-size:16px;padding:14px;">Start match</button>`);
+  go.onclick=startMatch;
+  w.appendChild(go);
+  return w;
+}
+
+function gameView(){
+  const w=el(`<div></div>`);
+  const grid=el(`<div class="players n${S.count}"></div>`);
+  S.players.forEach((p,i)=>{
+    const low=p.life<=5 && !p.dead;
+    const card=el(`<div class="pcard ${p.dead?'dead':''} ${low?'low':''}">
+      ${p.dead?'<div class="deadtag">out</div>':''}
+      <div class="pname">${p.name}</div>
+      <div class="pcolors">${p.colors}</div>
+      <div class="life ${low?'crit':''}">${p.life}</div>
+      <div class="lifebtns">
+        <button data-d="-5">−5</button><button data-d="-1">−1</button>
+        <button data-d="1">+1</button><button data-d="5">+5</button>
+      </div>
+      <div class="extra">
+        <span class="pchip ${p.poison>0?'hot':''}" data-p="-1">☠ −</span>
+        <span class="pchip ${p.poison>0?'hot':''}">${p.poison}</span>
+        <span class="pchip ${p.poison>0?'hot':''}" data-p="1">☠ +</span>
+        <button class="tiny" data-win="${i}" style="margin-left:auto;">Win</button>
+      </div>
+    </div>`);
+    card.querySelectorAll(".lifebtns button").forEach(b=>b.onclick=()=>adjust(i,+b.dataset.d));
+    card.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>poison(i,+b.dataset.p));
+    card.querySelector("[data-win]").onclick=()=>declareWinner(i,false);
+    grid.appendChild(card);
+  });
+  w.appendChild(grid);
+
+  const log=el(`<div class="panel" style="margin-top:10px;"><div class="label">Match log</div>
+    <div class="log">${S.log.length?S.log.map(l=>`<div class="${l.s?'say':''}">${l.t}</div>`).join(""):'<div style="color:var(--muted)">No plays yet.</div>'}</div></div>`);
+  w.appendChild(log);
+  return w;
+}
+
+function resultView(){
+  const w=S.players[S.winner];
+  const v=el(`<div></div>`);
+  v.appendChild(el(`<div class="panel" style="text-align:center;">
+     <div class="label">Winner</div>
+     <div style="font-family:var(--fd);font-size:28px;font-weight:600;color:var(--parchment);margin:6px 0;">${w.name}</div>
+     <div style="font-size:13px;color:var(--muted);">Match ${S.matches} recorded</div>
+  </div>`));
+  const again=el(`<button class="primary" style="width:100%;font-size:16px;padding:14px;margin-bottom:8px;">Rematch (same decks)</button>`);
+  again.onclick=()=>{ startMatch(); };
+  v.appendChild(again);
+  const chg=el(`<button style="width:100%;">Change decks</button>`);
+  chg.onclick=()=>{S.screen="setup";render();};
+  v.appendChild(chg);
+  v.appendChild(standingsView());
+  return v;
+}
+
+function standingsView(){
+  const names=Object.keys(S.records);
+  const rows=names.map(n=>{
+    const r=S.records[n], g=r.w+r.l;
+    return {n,w:r.w,l:r.l,g,pct:g?r.w/g*100:0};
+  }).sort((a,b)=>b.pct-a.pct||b.w-a.w);
+  const w=el(`<div class="panel" style="margin-top:10px;">
+    <div class="label">Standings — ${S.matches} match${S.matches===1?"":"es"}</div>
+    ${rows.length?`<table><thead><tr><th>Deck</th><th style="text-align:right">W</th><th style="text-align:right">L</th><th style="text-align:right">Win %</th></tr></thead>
+    <tbody>${rows.map(r=>`<tr><td>${r.n}<div class="bar"><i style="width:${r.pct.toFixed(0)}%"></i></div></td>
+      <td class="num">${r.w}</td><td class="num">${r.l}</td><td class="num">${r.g?r.pct.toFixed(0)+"%":"—"}</td></tr>`).join("")}</tbody></table>`
+    :'<div style="color:var(--muted);font-size:13px;">No matches recorded yet.</div>'}
+    ${rows.length?'<button class="tiny danger" id="clr" style="margin-top:10px;">Clear records</button>':''}
+  </div>`);
+  const c=w.querySelector("#clr");
+  if(c) c.onclick=()=>{ if(confirm("Clear all win/loss records?")){S.records={};S.matches=0;save();render();} };
+  return w;
+}
+
+load(); render();
+</script>
+</body>
+</html>
